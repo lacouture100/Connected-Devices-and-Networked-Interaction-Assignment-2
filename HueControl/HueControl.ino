@@ -38,10 +38,13 @@ JSONVar lightState;
 int difference = 25;
 int brightness = 0;
 int hue = 0;
-int sensorPin = A7;    // select the input pin for the potentiometer     // select the pin for the LED
-int sensorValue = 0;  // variable to store the value coming from the sensor
-int mappedValue = 0;
+int sensorHuePin = A7;    // select the input pin for the potentiometer     // select the pin for the LED
+int sensorHueValue = 0;  // variable to store the value coming from the sensor
+int mappedHueValue = 0;
 
+int sensorBriPin = A6;    // select the input pin for the potentiometer     // select the pin for the LED
+int sensorBriValue = 0;  // variable to store the value coming from the sensor
+int mappedBriValue = 0;
 
 void setup() {
   //Initialize serial and wait for port to open:
@@ -68,16 +71,20 @@ void setup() {
 void loop() {
 
   
-  sensorValue = analogRead(sensorPin);
-  mappedValue = map(sensorValue,0,1023,0,60000);
-  Serial.println(mappedValue);
-  lightState["hue"] = mappedValue;
+  sensorHueValue = analogRead(sensorHuePin);
+  mappedHueValue = map(sensorHueValue,0,1023,0,60000);
+  lightState["hue"] = mappedHueValue;
+
+   sensorBriValue = analogRead(sensorBriPin);
+  mappedBriValue = map(sensorBriValue,0,1023,0,255);
+  lightState["bri"] =   mappedBriValue;
   
 
   sendRequest(6, lightState);   // turn light on
-    displayLightData("Light" + String(SECRET_HUBADDR),0,0,
-                 "Hue:" + String(mappedValue),0,10,
-                 "Bright:" + String(mappedValue),0,20);
+  
+  displayLightData("Light" + String(SECRET_HUBADDR),0,0,
+                 "Hue:" + String(mappedHueValue),0,10,
+                 "Bright:" + String(mappedBriValue),0,20);
             
 
 }
@@ -91,20 +98,20 @@ void sendRequest(int light, JSONVar myState) {
   // make a string for the JSON command:
   String body  = JSON.stringify(lightState);
   // see what you assembled to send:
-  Serial.print("PUT request to server: ");
-  Serial.println(request);
-  Serial.print("JSON command to server: ");
-  Serial.println(body);
+  //Serial.print("PUT request to server: ");
+  //Serial.println(request);
+  //Serial.print("JSON command to server: ");
+  //Serial.println(body);
   // make the PUT request to the hub:
   httpClient.put(request, contentType, body);
   // read the status code and body of the response
   int statusCode = httpClient.responseStatusCode();
   String response = httpClient.responseBody();
-  Serial.print("Status code from server: ");
-  Serial.println(statusCode);
-  Serial.print("Server response: ");
-  Serial.println(response);
-  Serial.println();
+  //Serial.print("Status code from server: ");
+  //Serial.println(statusCode);
+  //Serial.print("Server response: ");
+  //Serial.println(response);
+  //Serial.println();
 }
 void displayWrite(String message, int x, int y) {
   display.clearDisplay();
