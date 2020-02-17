@@ -81,14 +81,16 @@ void loop() {
   mappedSatValue = map(sensorSatValue, 0, 1023, 0, 255);
   lightState["sat"] =   mappedSatValue;
 
-  // Send HTTP Request to the Hue Hub
-  sendRequest(6, lightState);
-
   //Display the Light's data in the OLED screen.
   displayLightData("Light" + String(SECRET_HUBADDR),
                    "Hue:" + String(mappedHueValue),
                    "Bright:" + String(mappedBriValue),
                    "Saturation:" + String(mappedSatValue));
+                   
+  // Send HTTP Request to the Hue Hub
+  sendRequest(6, lightState);
+
+
 }
 
 void sendRequest(int light, JSONVar myState) {
