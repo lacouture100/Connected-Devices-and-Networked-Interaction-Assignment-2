@@ -35,6 +35,7 @@ WiFiClient wifi;
 HttpClient httpClient = HttpClient(wifi, SECRET_HUBADDR);
 // a JSON object to hold the light state:
 JSONVar lightState;
+
 int difference = 25;
 int brightness = 0;
 int hue = 0;
@@ -46,73 +47,93 @@ int sensorBriPin = A6;    // select the input pin for the potentiometer     // s
 int sensorBriValue = 0;  // variable to store the value coming from the sensor
 int mappedBriValue = 0;
 
+int ledPin = 2;
+
 void setup() {
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
-    while (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
+  while (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
     Serial.println("SSD1306 setup...");
     delay(100);
   }
-  
+
+  pinMode(ledPin, OUTPUT);
   while ( WiFi.status() != WL_CONNECTED) {
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(SECRET_SSID);
+    
     // Connect to WPA/WPA2 network:
-    displayWrite("connecting:" + String(SECRET_SSID),0,0);
+    displayWrite("connecting:" + String(SECRET_SSID), 0, 0);
     WiFi.begin(SECRET_SSID, SECRET_PASS);
     delay(2000);
   }
-  displayWrite("connected",0,0);
+  
+  digitalWrite(ledPin, HIGH);
+  displayWrite(("WOOO! Connected! to network"), 0, 0);
+
   // you're connected now, so print out the data:
-  Serial.print("You're connected to the network IP = ");
+
   IPAddress ip = WiFi.localIP();
-  Serial.println(ip);
+
 }
 void loop() {
 
-  
+  //Values for the potentiometer that controls Hue
   sensorHueValue = analogRead(sensorHuePin);
-  mappedHueValue = map(sensorHueValue,0,1023,0,60000);
+  mappedHueValue = map(sensorHueValue, 0, 1023, 0, 60000);
   lightState["hue"] = mappedHueValue;
 
-   sensorBriValue = analogRead(sensorBriPin);
-  mappedBriValue = map(sensorBriValue,0,1023,0,255);
+  //Values for the potentiometer that controls brightness
+  sensorBriValue = analogRead(sensorBriPin);
+  mappedBriValue = map(sensorBriValue, 0, 1023, 0, 255);
+  lightState["bri"] =   mappedBriValue;
+
+  //Values for the potentiometer that controls saturarom
+  sensorBriValue = analogRead(sensorBriPin);
+  mappedBriValue = map(sensorBriValue, 0, 1023, 0, 255);
   lightState["bri"] =   mappedBriValue;
   
-
-  sendRequest(6, lightState);   // turn light on
+  //Send HTTP Request
+  sendRequest(6, lightState);   
   
-  displayLightData("Light" + String(SECRET_HUBADDR),0,0,
-                 "Hue:" + String(mappedHueValue),0,10,
-                 "Bright:" + String(mappedBriValue),0,20);
-            
-
+  // Display the light's parameters on the OLED screen
+  displayLightData("Light Address:" + String(SECRET_HUBADDR), 0, 0,
+                   "Hue: " + String(mappedHueValue), 0, 10,
+                   "Bright: " + String(mappedBriValue), 0, 20);
 }
-void sendRequest(int light, JSONVar myState) {
+
+void sendRequest(int lightNum, JSONVar myState) {
+  
   // make a String for the HTTP request path:
   String request = "/api/" + String(SECRET_HUBUSER);
   request += "/lights/";
-  request += light;
+  request += lightNum;
   request += "/state/";
   String contentType = "application/json";
+
   // make a string for the JSON command:
   String body  = JSON.stringify(lightState);
+
   // see what you assembled to send:
-  //Serial.print("PUT request to server: ");
-  //Serial.println(request);
-  //Serial.print("JSON command to server: ");
-  //Serial.println(body);
+  Serial.print("PUT request to server: ");
+  Serial.println(request);
+  Serial.print("JSON command to server: ");
+  Serial.println(body);
+
   // make the PUT request to the hub:
   httpClient.put(request, contentType, body);
+
   // read the status code and body of the response
   int statusCode = httpClient.responseStatusCode();
   String response = httpClient.responseBody();
-  //Serial.print("Status code from server: ");
-  //Serial.println(statusCode);
-  //Serial.print("Server response: ");
-  //Serial.println(response);
-  //Serial.println();
+
+  Serial.print("Status code from server: ");
+  Serial.println(statusCode);
+  Serial.print("Server response: ");
+  Serial.println(response);
+  Serial.println();
 }
+
 void displayWrite(String message, int x, int y) {
   display.clearDisplay();
   display.setTextSize(1); // Draw 2X-scale text
@@ -121,15 +142,20 @@ void displayWrite(String message, int x, int y) {
   display.println(message);
   display.display();
 }
-void displayLightData(String message1, int x1, int y1,String message2, int x2, int y2,String message3, int x3, int y3) {
+
+void displayLightData(String message1, int x, int y1, String message2, int x2, int y2, String message3, int x3, int y3) {
   display.clearDisplay();
   display.setTextSize(1); // Draw 2X-scale text
   display.setTextColor(WHITE);
+
   display.setCursor(x1, y1);
   display.println(message1);
-    display.setCursor(x2, y2);
+
+  display.setCursor(x2, y2);
   display.println(message2);
-    display.setCursor(x3, y3);
+
+  display.setCursor(x3, y3);
   display.println(message3);
+  
   display.display();
 }
