@@ -1,5 +1,20 @@
-/* Sketch made by Alvaro Lacouture based on the
-   HueBlink example for ArduinoHttpClient library made by Tom Igoe 2020
+/* HueBlink example for ArduinoHttpClient library
+   uses Arduino_JSON library as well
+   Uses ArduinoHttpClient library to control Philips Hue
+   For more on Hue developer API see http://developer.meethue.com
+  To control a light, the Hue expects a HTTP PUT request to:
+  http://hue.hub.address/api/hueUserName/lights/lightNumber/state
+  The body of the PUT request looks like this:
+  {"on": true} or {"on":false}
+  This example  shows how to concatenate Strings to assemble the
+  PUT request and the body of the request, and how to use the
+  Arduino_JSON library to assemble JSON to send the request.
+  A typical light state JSON for the Hue system looks like this:
+  {"on":true,"bri":254,"hue":0,"sat":0,"effect":"none",
+  "xy":[0.4584,0.4100],"ct":156,"alert":"none",
+  "colormode":"ct","reachable":true}
+   modified 2 Feb 2020
+   by Tom Igoe (tigoe)
 */
 #include <Wire.h>
 #include <SPI.h>
@@ -15,22 +30,21 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// Wifi instance and an HttpClient instance:
+// make a wifi instance and a HttpClient instance:
 WiFiClient wifi;
 HttpClient httpClient = HttpClient(wifi, SECRET_HUBADDR);
-
 // a JSON object to hold the light state:
 JSONVar lightState;
 
-int sensorHuePin = A3;    // Pin for the potentiometer that's controls Hue
+int sensorHuePin = A3;    // select the input pin for the potentiometer     // select the pin for the LED
 int sensorHueValue = 0;  // variable to store the value coming from the sensor
 int mappedHueValue = 0;
 
-int sensorBriPin = A6;    // Pin for the potentiometer that's controls Brightness
+int sensorBriPin = A6;    // select the input pin for the potentiometer     // select the pin for the LED
 int sensorBriValue = 0;  // variable to store the value coming from the sensor
 int mappedBriValue = 0;
 
-int sensorSatPin = A7;    // Pin for the potentiometer that's controls Brightness
+int sensorSatPin = A7;    // select the input pin for the potentiometer     // select the pin for the LED
 int sensorSatValue = 0;  // variable to store the value coming from the sensor
 int mappedSatValue = 0;
 
@@ -42,62 +56,59 @@ void setup() {
   while (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
     Serial.println("SSD1306 setup...");
     delay(100);
-
   }
-  //Indicate to the user the device is on
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, HIGH);
 
+  pinMode(ledPin, OUTPUT);
   while ( WiFi.status() != WL_CONNECTED) {
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(SECRET_SSID);
-
-    // Connect to WPA/WPA2 network and display status to user:
-    displayConnecting();
+    
+    // Connect to WPA/WPA2 network:
+    displayWrite("connecting:" + String(SECRET_SSID), 0, 0);
     WiFi.begin(SECRET_SSID, SECRET_PASS);
     delay(2000);
   }
-  //Indicate the user is connnected
-  displayWrite("WOOO! Connected!", 0, 0);
+  
+  digitalWrite(ledPin, HIGH);
+  displayWrite(("WOOO! Connected! "), 0, 10);
+
+  // you're connected now, so print out the data:
 
   IPAddress ip = WiFi.localIP();
-  //Serial.println(ip);
-}
 
+}
 void loop() {
 
-  //Sensor value for the Hue
+  //Values for the potentiometer that controls Hue
   sensorHueValue = analogRead(sensorHuePin);
   mappedHueValue = map(sensorHueValue, 0, 1023, 0, 60000);
   lightState["hue"] = mappedHueValue;
 
-  //Sensor value for the Brightness
+  //Values for the potentiometer that controls brightness
   sensorBriValue = analogRead(sensorBriPin);
   mappedBriValue = map(sensorBriValue, 0, 1023, 0, 255);
   lightState["bri"] =   mappedBriValue;
 
-  //Sensor value for the Brightness
+  //Values for the potentiometer that controls saturation
   sensorSatValue = analogRead(sensorSatPin);
   mappedSatValue = map(sensorSatValue, 0, 1023, 0, 255);
   lightState["sat"] =   mappedSatValue;
-
-  //Display the Light's data in the OLED screen.
-  displayLightData("Light" + String(SECRET_HUBADDR),
-                   "Hue:" + String(mappedHueValue),
-                   "Bright:" + String(mappedBriValue),
-                   "Saturation:" + String(mappedSatValue));
-                   
-  // Send HTTP Request to the Hue Hub
-  sendRequest(6, lightState);
-
-
+  
+  //Send HTTP Request
+  sendRequest(6, lightState);   
+  
+  // Display the light's parameters on the OLED screen
+  displayLightData("Hue: " + String(mappedHueValue), 0, 10,
+                   "Bright: " + String(mappedBriValue), 0, 20,
+                   "Saturation: " + String(mappedSatValue), 0, 30);
 }
 
-void sendRequest(int light, JSONVar myState) {
+void sendRequest(int lightNum, JSONVar myState) {
+  
   // make a String for the HTTP request path:
   String request = "/api/" + String(SECRET_HUBUSER);
   request += "/lights/";
-  request += light;
+  request += lightNum;
   request += "/state/";
   String contentType = "application/json";
 
@@ -133,38 +144,19 @@ void displayWrite(String message, int x, int y) {
   display.display();
 }
 
-void displayConnecting() {
+void displayLightData(String message1, int x1, int y1, String message2, int x2, int y2, String message3, int x3, int y3) {
   display.clearDisplay();
-  display.setTextSize(1); // Draw 1X-scale text
+  display.setTextSize(1); // Draw 2X-scale text
   display.setTextColor(WHITE);
-  int posY = 0;
-  int posX = 0;
 
-  display.setCursor(posX, posY);
-  display.println("Connecting...");
-}
-
-void displayLightData(String message1, String message2,  String message3, String message4 ) {
-  display.clearDisplay();
-  display.setTextSize(1); // Draw 1X-scale text
-  display.setTextColor(WHITE);
-  int posY = 0;
-  int posX = 0;
-
-  display.setCursor(posX, posY);
+  display.setCursor(x1, y1);
   display.println(message1);
-  posX += 10;
 
-  display.setCursor(posX, posY);
+  display.setCursor(x2, y2);
   display.println(message2);
-  posX += 10;
 
-  display.setCursor(posX, posY);
+  display.setCursor(x3, y3);
   display.println(message3);
-  posX += 10;
-
-  display.setCursor(posX, posY);
-  display.println(message4);
-  posX += 10;
+  
   display.display();
 }
