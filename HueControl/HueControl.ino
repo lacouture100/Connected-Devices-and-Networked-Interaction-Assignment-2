@@ -93,14 +93,16 @@ void loop() {
   sensorSatValue = analogRead(sensorSatPin);
   mappedSatValue = map(sensorSatValue, 0, 1023, 0, 255);
   lightState["sat"] =   mappedSatValue;
-  
-  //Send HTTP Request
-  sendRequest(6, lightState);   
-  
-  // Display the light's parameters on the OLED screen
+
+    // Display the light's parameters on the OLED screen
   displayLightData("Hue: " + String(mappedHueValue), 0, 10,
                    "Bright: " + String(mappedBriValue), 0, 20,
                    "Saturation: " + String(mappedSatValue), 0, 30);
+                   
+  //Send HTTP Request
+  sendRequest(6, lightState);   
+  
+
 }
 
 void sendRequest(int lightNum, JSONVar myState) {
