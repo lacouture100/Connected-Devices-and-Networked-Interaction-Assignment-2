@@ -54,17 +54,17 @@ void setup() {
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
   while (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
-    Serial.println("SSD1306 setup...");
+    //Serial.println("SSD1306 setup...");
     delay(100);
   }
 
   pinMode(ledPin, OUTPUT);
   while ( WiFi.status() != WL_CONNECTED) {
-    Serial.print("Attempting to connect to WPA SSID: ");
-    Serial.println(SECRET_SSID);
+    //Serial.print("Attempting to connect to WPA SSID: ");
+    //Serial.println(SECRET_SSID);
     
     // Connect to WPA/WPA2 network:
-    displayWrite("connecting:" + String(SECRET_SSID), 0, 0);
+    displayWrite(("connecting to network"), 0, 0);
     WiFi.begin(SECRET_SSID, SECRET_PASS);
     delay(2000);
   }
@@ -146,7 +146,7 @@ void displayWrite(String message, int x, int y) {
 
 void displayLightData(String message1, int x1, int y1, String message2, int x2, int y2, String message3, int x3, int y3) {
   display.clearDisplay();
-  display.setTextSize(1); // Draw 2X-scale text
+  display.setTextSize(1); // Draw 1X-scale text
   display.setTextColor(WHITE);
 
   display.setCursor(x1, y1);
