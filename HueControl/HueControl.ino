@@ -81,7 +81,7 @@ void loop() {
 
   //Values for the potentiometer that controls Hue
   sensorHueValue = analogRead(sensorHuePin);
-  mappedHueValue = map(sensorHueValue, 0, 1023, 0, 60000);
+  mappedHueValue = map(sensorHueValue, 0, 1023, 0, 64000);
   lightState["hue"] = mappedHueValue;
 
   //Values for the potentiometer that controls brightness
@@ -136,12 +136,12 @@ void sendRequest(int lightNum, JSONVar myState) {
 }
 
 void displayWrite(String message, int x, int y) {
-  display.clearDisplay();
-  display.setTextSize(1); // Draw 2X-scale text
-  display.setTextColor(WHITE);
-  display.setCursor(x, y);
-  display.println(message);
-  display.display();
+  display.clearDisplay(); // Clear the display
+  display.setTextSize(1); // Set the font size           
+  display.setTextColor(WHITE); // Set the color
+  display.setCursor(x, y); // Set the position
+  display.println(message); // Set the message to print 
+  display.display();// Display the message
 }
 
 void displayLightData(String message1, int x1, int y1, String message2, int x2, int y2, String message3, int x3, int y3) {
